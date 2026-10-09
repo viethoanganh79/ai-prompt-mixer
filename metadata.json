@@ -1,0 +1,6 @@
+{
+  "name": "AI Prompt Mixer",
+  "description": "Professional AI Prompt Engineering Studio with dynamic block chaining, local SQLite/IndexedDB storage, variable templating, and two-way Google Sheets sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
