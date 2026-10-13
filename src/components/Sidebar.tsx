@@ -141,10 +141,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenNewBlock, onEditBlock, o
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <Layers className="w-4 h-4 text-indigo-500" />
-              Thư viện Prompt Blocks
+              Prompt Blocks
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {blocks.length} khối mẫu & khối tùy chỉnh
+              {blocks.length} khối 
             </p>
           </div>
           <button
@@ -168,21 +168,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenNewBlock, onEditBlock, o
           />
         </div>
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                selectedCategory === cat.id
-                  ? 'bg-indigo-600 text-white shadow-xs font-semibold'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-              }`}
-            >
-              {cat.label} ({cat.count})
-            </button>
-          ))}
+        {/* Category Filter */}
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 shrink-0 text-slate-400" aria-hidden="true" />
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value as PromptCategory | 'all')}
+            aria-label="Lọc block theo danh mục"
+            className="w-full min-w-0 px-3 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+          >
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.label} ({cat.count})
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

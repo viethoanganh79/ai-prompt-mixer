@@ -154,10 +154,7 @@ export const BlockEditorModal: React.FC<BlockEditorModalProps> = ({
 
   const sampleQuickVars = [
     { name: 'target_audience', mode: 'multi' as const, opts: ['Developers', 'Startup Founders', 'Marketers'] },
-    { name: 'industry', mode: 'single' as const, opts: ['B2B SaaS', 'E-commerce', 'Fintech', 'EdTech'] },
     { name: 'role', mode: 'single' as const, opts: ['Senior Tech Lead', 'Creative Copywriter', 'Data Scientist'] },
-    { name: 'tech_stack', mode: 'multi' as const, opts: ['React 19', 'TypeScript', 'Node.js', 'PostgreSQL'] },
-    { name: 'tone', mode: 'single' as const, opts: ['Chuyên nghiệp', 'Hài hước', 'Súc tích'] },
     { name: 'custom_goal', mode: 'text' as const, opts: [] },
   ];
 
@@ -242,52 +239,6 @@ export const BlockEditorModal: React.FC<BlockEditorModalProps> = ({
               <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
                 Nội dung câu lệnh (Prompt Template):
               </label>
-              <span className="text-xs text-indigo-600 dark:text-indigo-400 font-mono font-medium">
-                Cú pháp `{'{{biến}}'}` lưu trực tiếp trong text
-              </span>
-            </div>
-
-            {/* Syntax Rules & Comma-Separated Annotation Box */}
-            <div className="mb-2.5 p-3 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-xs text-amber-900 dark:text-amber-200 space-y-2">
-              <div className="flex items-center justify-between font-bold">
-                <div className="flex items-center gap-1.5 text-xs text-amber-900 dark:text-amber-100">
-                  <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  <span>Quy tắc mã hoá biến số trong nội dung prompt:</span>
-                </div>
-                <span className="text-[11px] font-normal px-2 py-0.5 rounded-full bg-amber-200/60 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200">
-                  Lưu thẳng trong text
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 font-mono text-[11px]">
-                <div className="p-2 rounded-lg bg-white/90 dark:bg-slate-900/90 border border-amber-200/60 dark:border-amber-900/40 shadow-2xs">
-                  <div className="text-indigo-600 dark:text-indigo-400 font-bold">{`{{bien}}`}</div>
-                  <div className="text-slate-600 dark:text-slate-300 font-sans text-[11px] mt-0.5">
-                    Dành cho người dùng tự do nhập văn bản
-                  </div>
-                </div>
-
-                <div className="p-2 rounded-lg bg-white/90 dark:bg-slate-900/90 border border-amber-200/60 dark:border-amber-900/40 shadow-2xs">
-                  <div className="text-emerald-600 dark:text-emerald-400 font-bold">{`{{bien | lựa chọn 1, lựa chọn 2}}`}</div>
-                  <div className="text-slate-600 dark:text-slate-300 font-sans text-[11px] mt-0.5">
-                    Dropdown chọn 1 mục — <strong className="text-amber-800 dark:text-amber-300 underline font-semibold">ngăn cách bằng dấu phẩy (,)</strong>
-                  </div>
-                </div>
-
-                <div className="p-2 rounded-lg bg-white/90 dark:bg-slate-900/90 border border-amber-200/60 dark:border-amber-900/40 shadow-2xs">
-                  <div className="text-purple-600 dark:text-purple-400 font-bold">{`{{bien |* lựa chọn 1, lựa chọn 2}}`}</div>
-                  <div className="text-slate-600 dark:text-slate-300 font-sans text-[11px] mt-0.5">
-                    Dropdown chọn nhiều mục — <strong className="text-amber-800 dark:text-amber-300 underline font-semibold">ngăn cách bằng dấu phẩy (,)</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-[11px] text-amber-800/90 dark:text-amber-300/90 flex items-center gap-1.5 pt-0.5">
-                <Info className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-                <span>
-                  <strong>Chú thích:</strong> Các lựa chọn được <strong>ngăn cách bởi dấu phẩy (,)</strong>. Cấu trúc lưu thẳng trong text mà không cần structure phức tạp thêm.
-                </span>
-              </div>
             </div>
 
             {/* Quick Variable Bar */}
@@ -477,6 +428,46 @@ export const BlockEditorModal: React.FC<BlockEditorModalProps> = ({
               placeholder="marketing, viral, seo, copy"
               className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
             />
+          </div>
+
+          {/* Syntax Rules & Comma-Separated Annotation Box */}
+          <div className="mb-2.5 p-3 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-xs text-amber-900 dark:text-amber-200 space-y-2">
+            <div className="flex items-center justify-between font-bold">
+              <div className="flex items-center gap-1.5 text-xs text-amber-900 dark:text-amber-100">
+                <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span>Quy tắc mã hoá biến số trong nội dung prompt:</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 font-mono text-[11px]">
+              <div className="p-2 rounded-lg bg-white/90 dark:bg-slate-900/90 border border-amber-200/60 dark:border-amber-900/40 shadow-2xs">
+                <div className="text-indigo-600 dark:text-indigo-400 font-bold">{`{{bien}}`}</div>
+                <div className="text-slate-600 dark:text-slate-300 font-sans text-[11px] mt-0.5">
+                  Dành cho người dùng tự do nhập văn bản
+                </div>
+              </div>
+
+              <div className="p-2 rounded-lg bg-white/90 dark:bg-slate-900/90 border border-amber-200/60 dark:border-amber-900/40 shadow-2xs">
+                <div className="text-emerald-600 dark:text-emerald-400 font-bold">{`{{bien | lựa chọn 1, lựa chọn 2}}`}</div>
+                <div className="text-slate-600 dark:text-slate-300 font-sans text-[11px] mt-0.5">
+                  Chọn 1 trong danh sách
+                </div>
+              </div>
+
+              <div className="p-2 rounded-lg bg-white/90 dark:bg-slate-900/90 border border-amber-200/60 dark:border-amber-900/40 shadow-2xs">
+                <div className="text-purple-600 dark:text-purple-400 font-bold">{`{{bien |* lựa chọn 1, lựa chọn 2}}`}</div>
+                <div className="text-slate-600 dark:text-slate-300 font-sans text-[11px] mt-0.5">
+                  Chọn nhiều trong danh sách
+                </div>
+              </div>
+            </div>
+
+            <div className="text-[11px] text-amber-800/90 dark:text-amber-300/90 flex items-center gap-1.5 pt-0.5">
+              <Info className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <span>
+                <strong>Chú thích:</strong> Các lựa chọn được <strong>ngăn cách bởi dấu phẩy (,)</strong>.
+              </span>
+            </div>
           </div>
 
           {/* Footer Submit */}

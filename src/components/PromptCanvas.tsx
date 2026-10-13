@@ -211,7 +211,7 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
           <div className="flex items-center gap-2">
             <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
             <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Mixer Workspace
+              Workspace
             </h2>
           </div>
           <span className="text-xs px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200 dark:border-slate-700">
@@ -245,15 +245,18 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
 
       {/* Dynamic Variables Bar with Dropdown Selectors */}
       {detectedVariables.length > 0 && (
-        <div className="p-3.5 border-b border-amber-200/80 dark:border-amber-900/50 bg-amber-50/70 dark:bg-amber-950/25 max-h-80 overflow-y-auto">
+        <div
+          className={`p-3.5 border-b border-amber-200/80 dark:border-amber-900/50 bg-amber-50/70 dark:bg-amber-950/25 ${
+            openDropdownVar
+              ? 'relative z-40 max-h-none overflow-visible'
+              : 'max-h-80 overflow-y-auto'
+          }`}
+        >
           <div className="flex items-center justify-between mb-2.5">
             <div className="flex items-center gap-2">
               <Sliders className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span className="text-xs sm:text-sm font-bold text-amber-900 dark:text-amber-200">
-                Biến số động ({detectedVariables.length} biến)
-              </span>
-              <span className="text-[11px] text-amber-700/80 dark:text-amber-400/80 hidden md:inline">
-                • Dropdown lựa chọn gọn gàng, tiết kiệm diện tích màn hình
+                Biến số ({detectedVariables.length} biến)
               </span>
             </div>
             <div className="flex items-center gap-2.5">
@@ -273,7 +276,7 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-2.5">
             {detectedVariables.map((v) => {
               const currentMode = getEffectiveMode(v);
               const options = getVariableOptionsList(v);
