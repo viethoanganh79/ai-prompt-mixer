@@ -12,6 +12,7 @@ import {
   Check,
 } from 'lucide-react';
 import { usePromptMixer } from '../context/PromptMixerContext';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   parseGoogleSheetUrl,
   generateCsvForBlocks,
@@ -32,6 +33,8 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose, onShowToa
     syncPushToSheet,
     blocks,
   } = usePromptMixer();
+
+  const { t, isVietnamese } = useLanguage();
 
   const [urlInput, setUrlInput] = useState(syncConfig.sheetUrl || '');
   const [webhookInput, setWebhookInput] = useState(syncConfig.webhookUrl || '');
@@ -146,10 +149,12 @@ export const SyncModal: React.FC<SyncModalProps> = ({ isOpen, onClose, onShowToa
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                Cloud Sync: Google Sheets Hub
+                {isVietnamese ? 'Cloud Sync: Google Sheets Hub' : 'Cloud Sync: Google Sheets Hub'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                Đồng bộ hóa 2 chiều kho prompt blocks với Google Sheet cá nhân hoặc nhóm
+                {isVietnamese
+                  ? 'Đồng bộ hóa 2 chiều kho prompt blocks với Google Sheet cá nhân hoặc nhóm'
+                  : 'Two-way synchronization of prompt blocks with personal or team Google Sheets'}
               </p>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { PromptBlock, PromptPreset } from '../types';
+import { DEFAULT_BLOCKS_EN, DEFAULT_PRESETS_EN } from './defaultDataEn';
 
 export const DEFAULT_BLOCKS: PromptBlock[] = [
   // --- PERSONA ---
@@ -271,7 +272,7 @@ export const DEFAULT_PRESETS: PromptPreset[] = [
         category: 'constraints',
         content: getDefBlock('block-const-conciseness').content,
         prefix: '',
-        suffix: '',
+        suffix: '\n\n',
         isEnabled: true,
         order: 3,
       },
@@ -336,7 +337,7 @@ export const DEFAULT_PRESETS: PromptPreset[] = [
         category: 'constraints',
         content: getDefBlock('block-const-hallucination-guard').content,
         prefix: '',
-        suffix: '',
+        suffix: '\n\n',
         isEnabled: true,
         order: 3,
       },
@@ -385,7 +386,7 @@ export const DEFAULT_PRESETS: PromptPreset[] = [
         category: 'output',
         content: getDefBlock('block-output-json-schema').content,
         prefix: '',
-        suffix: '',
+        suffix: '\n\n',
         isEnabled: true,
         order: 2,
       },
@@ -443,7 +444,7 @@ export const DEFAULT_PRESETS: PromptPreset[] = [
         category: 'output',
         content: getDefBlock('block-output-actionable-checklist').content,
         prefix: '',
-        suffix: '',
+        suffix: '\n\n',
         isEnabled: true,
         order: 3,
       },
@@ -491,7 +492,7 @@ export const DEFAULT_PRESETS: PromptPreset[] = [
         category: 'output',
         content: getDefBlock('block-output-markdown-table').content,
         prefix: '',
-        suffix: '',
+        suffix: '\n\n',
         isEnabled: true,
         order: 2,
       },
@@ -504,3 +505,16 @@ export const DEFAULT_PRESETS: PromptPreset[] = [
     updatedAt: new Date().toISOString(),
   },
 ];
+
+export const DEFAULT_BLOCKS_VI = DEFAULT_BLOCKS;
+export const DEFAULT_PRESETS_VI = DEFAULT_PRESETS;
+
+export function getDefaultBlocks(lang: 'vi' | 'en' = 'vi'): PromptBlock[] {
+  return lang === 'en' ? DEFAULT_BLOCKS_EN : DEFAULT_BLOCKS_VI;
+}
+
+export function getDefaultPresets(lang: 'vi' | 'en' = 'vi'): PromptPreset[] {
+  return lang === 'en' ? DEFAULT_PRESETS_EN : DEFAULT_PRESETS_VI;
+}
+
+export { DEFAULT_BLOCKS_EN, DEFAULT_PRESETS_EN } from './defaultDataEn';

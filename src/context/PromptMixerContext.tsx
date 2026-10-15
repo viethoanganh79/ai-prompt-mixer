@@ -1,7 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { PromptBlock, CanvasBlock, PromptPreset, UserLog, LogAttachment, SyncConfig } from '../types';
+import {
+  PromptBlock,
+  CanvasBlock,
+  PromptPreset,
+  UserLog,
+  LogAttachment,
+  SyncConfig,
+  PromptOutputFormat,
+  CustomAIConfig,
+} from '../types';
 import { localDb } from '../db/indexedDbEngine';
-import { DEFAULT_BLOCKS, DEFAULT_PRESETS } from '../db/defaultData';
+import { DEFAULT_BLOCKS, DEFAULT_PRESETS, getDefaultBlocks, getDefaultPresets } from '../db/defaultData';
 import { fetchBlocksFromGoogleSheet, pushBlocksToWebhook } from '../services/googleSheetsSync';
 import {
   extractVariablesFromText,
@@ -9,6 +18,7 @@ import {
   replaceVariableInCompiledPrompt,
   VariableInputType,
 } from '../utils/variableParser';
+import { compileCanvasBlocks } from '../utils/promptCompiler';
 
 interface PromptMixerContextType {
   // Library & Canvas
@@ -23,6 +33,8 @@ interface PromptMixerContextType {
   detectedVariables: string[];
   canvasVariableDefs: Record<string, { mode: VariableInputType; options: string[] }>;
   compiledPrompt: string;
+  promptFormat: PromptOutputFormat;
+  setPromptFormat: (format: PromptOutputFormat) => void;
   setVariableValue: (name: string, value: string) => void;
   resetVariables: () => void;
 
@@ -74,14 +86,33 @@ interface PromptMixerContextType {
   toggleVariableOption: (varName: string, option: string) => void;
   setVariableSingleOption: (varName: string, option: string) => void;
 
-  // Database Backup & Restore
+  // Database Backup, Restore & Selective Import
   exportJsonBackup: () => Promise<string>;
   exportSqlDump: () => Promise<string>;
   importBackupData: (json: string) => Promise<{ blocksCount: number; presetsCount: number }>;
-  resetDatabaseToDefaults: () => Promise<void>;
+  importResolvedBatch: (
+    blocksToSave: PromptBlock[],
+    presetsToSave: PromptPreset[]
+  ) => Promise<{ blocksCount: number; presetsCount: number }>;
+  resetDatabaseToDefaults: (lang?: 'vi' | 'en') => Promise<void>;
+  switchLibraryLanguage: (lang: 'vi' | 'en') => Promise<void>;
+  refreshLibraryFromDb: () => Promise<void>;
 
-  // AI Testing
+  // AI Testing & Multi-Model Playground (Pro Custom Key)
   isTestingAi: boolean;
+  aiConfig: CustomAIConfig;
+  updateAiConfig: (partial: Partial<CustomAIConfig>) => Promise<void>;
+  testPromptWithAI: (
+    promptText?: string,
+    overrideConfig?: Partial<CustomAIConfig>
+  ) => Promise<{
+    success: boolean;
+    output?: string;
+    durationMs?: number;
+    model?: string;
+    provider?: string;
+    error?: string;
+  }>;
   testPromptWithGemini: (promptText?: string) => Promise<{
     success: boolean;
     output?: string;
@@ -93,6 +124,8 @@ interface PromptMixerContextType {
     output: string;
     durationMs: number;
     timestamp: string;
+    model?: string;
+    provider?: string;
   } | null;
   clearAiTestResult: () => void;
 }
@@ -127,12 +160,72 @@ export const PromptMixerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     totalSyncedBlocks: 0,
   });
 
+  const DEFAULT_AI_CONFIG: CustomAIConfig = {
+    provider: 'built-in',
+    apiKey: '',
+    endpointUrl: '',
+    model: 'gemini-3.8-flash',
+    temperature: 0.7,
+  };
+
+  const [promptFormat, setPromptFormatState] = useState<PromptOutputFormat>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('prompt_output_format_v2');
+      if (saved === 'markdown' || saved === 'xml') {
+        return saved as PromptOutputFormat;
+      }
+    }
+    return 'markdown';
+  });
+
+  const setPromptFormat = useCallback((format: PromptOutputFormat) => {
+    setPromptFormatState(format);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('prompt_output_format_v2', format);
+      localStorage.setItem('prompt_output_format', format);
+    }
+  }, []);
+
+  const [aiConfig, setAiConfig] = useState<CustomAIConfig>(DEFAULT_AI_CONFIG);
+
+  useEffect(() => {
+    const loadAiConfig = async () => {
+      try {
+        const saved = await localDb.getSetting<CustomAIConfig>('custom_ai_config', DEFAULT_AI_CONFIG);
+        if (saved) {
+          // Tự động chuyển đổi các model cũ / không còn khả dụng sang gemini-3.8-flash
+          if (
+            saved.model === 'gemini-2.5-flash' ||
+            saved.model === 'gemini-3.6-flash' ||
+            !saved.model
+          ) {
+            saved.model = 'gemini-3.8-flash';
+          }
+          setAiConfig(saved);
+        }
+      } catch (e) {
+        console.warn('Failed to load AI config from IndexedDB:', e);
+      }
+    };
+    loadAiConfig();
+  }, []);
+
+  const updateAiConfig = useCallback(async (partial: Partial<CustomAIConfig>) => {
+    setAiConfig((prev) => {
+      const next = { ...prev, ...partial };
+      localDb.setSetting('custom_ai_config', next);
+      return next;
+    });
+  }, []);
+
   const [isTestingAi, setIsTestingAi] = useState(false);
   const [aiTestResult, setAiTestResult] = useState<{
     prompt: string;
     output: string;
     durationMs: number;
     timestamp: string;
+    model?: string;
+    provider?: string;
   } | null>(null);
 
   // Initialize DB and load data
@@ -222,26 +315,10 @@ export const PromptMixerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return extractUnifiedVariableMap(activeTexts);
   }, [canvasItems]);
 
-  // Compile active blocks into the final prompt
+  // Compile active blocks into the final prompt (XML or Markdown format)
   const compiledPrompt = useMemo(() => {
-    const activeBlocks = canvasItems.filter((item) => item.isEnabled);
-    if (activeBlocks.length === 0) return '';
-
-    return activeBlocks
-      .map((item) => {
-        let text = item.content;
-        // Replace variables (matching {{v}}, {{v | ...}}, and {{v |* ...}})
-        detectedVariables.forEach((v) => {
-          text = replaceVariableInCompiledPrompt(text, v, variables[v]);
-        });
-
-        const prefix = item.prefix || '';
-        const suffix = item.suffix !== undefined ? item.suffix : '\n\n';
-        return `${prefix}${text}${suffix}`;
-      })
-      .join('')
-      .trim();
-  }, [canvasItems, variables, detectedVariables]);
+    return compileCanvasBlocks(canvasItems, variables, detectedVariables, promptFormat);
+  }, [canvasItems, variables, detectedVariables, promptFormat]);
 
   const setVariableValue = useCallback((name: string, value: string) => {
     setVariables((prev) => ({
@@ -648,20 +725,78 @@ export const PromptMixerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return result;
   }, []);
 
-  const resetDatabaseToDefaults = useCallback(async () => {
-    await localDb.resetToDefaults();
-    setBlocks(DEFAULT_BLOCKS);
-    setPresets(DEFAULT_PRESETS);
-    if (DEFAULT_PRESETS.length > 0) {
-      setCanvasItems(DEFAULT_PRESETS[0].canvasItems);
-      setVariables(DEFAULT_PRESETS[0].variableValues);
-      setActivePresetId(DEFAULT_PRESETS[0].id);
+  const importResolvedBatch = useCallback(
+    async (blocksToSave: PromptBlock[], presetsToSave: PromptPreset[]) => {
+      if (blocksToSave.length > 0) {
+        await localDb.bulkInsertBlocks(blocksToSave);
+      }
+      if (presetsToSave.length > 0) {
+        await localDb.bulkInsertPresets(presetsToSave);
+      }
+
+      const updatedBlocks = await localDb.getAllBlocks();
+      const updatedPresets = await localDb.getAllPresets();
+
+      setBlocks(updatedBlocks);
+      setPresets(updatedPresets);
+
+      return {
+        blocksCount: blocksToSave.length,
+        presetsCount: presetsToSave.length,
+      };
+    },
+    []
+  );
+
+  const switchLibraryLanguage = useCallback(
+    async (targetLang: 'vi' | 'en') => {
+      const { updatedBlocks, updatedPresets } = await localDb.switchDefaultLanguage(targetLang);
+      setBlocks(updatedBlocks);
+      setPresets(updatedPresets);
+
+      // Translate active canvas items that belong to default blocks
+      const blockMap = new Map(updatedBlocks.map((b) => [b.id, b]));
+      setCanvasItems((prev) =>
+        prev.map((item) => {
+          if (item.blockId && blockMap.has(item.blockId)) {
+            const def = blockMap.get(item.blockId)!;
+            return {
+              ...item,
+              title: def.title,
+              category: def.category,
+              content: def.content,
+            };
+          }
+          return item;
+        })
+      );
+    },
+    []
+  );
+
+  const resetDatabaseToDefaults = useCallback(async (lang: 'vi' | 'en' = 'vi') => {
+    await localDb.resetToDefaults(lang);
+    const defBlocks = getDefaultBlocks(lang);
+    const defPresets = getDefaultPresets(lang);
+    setBlocks(defBlocks);
+    setPresets(defPresets);
+    if (defPresets.length > 0) {
+      setCanvasItems(defPresets[0].canvasItems);
+      setVariables(defPresets[0].variableValues);
+      setActivePresetId(defPresets[0].id);
     }
   }, []);
 
-  // --- AI Testing ---
-  const testPromptWithGemini = useCallback(
-    async (promptText?: string) => {
+  const refreshLibraryFromDb = useCallback(async () => {
+    const loadedBlocks = await localDb.getAllBlocks();
+    const loadedPresets = await localDb.getAllPresets();
+    setBlocks(loadedBlocks);
+    setPresets(loadedPresets);
+  }, []);
+
+  // --- AI Testing & Multi-Model Execution ---
+  const testPromptWithAI = useCallback(
+    async (promptText?: string, overrideConfig?: Partial<CustomAIConfig>) => {
       const targetPrompt = promptText || compiledPrompt;
       if (!targetPrompt) {
         return { success: false, error: 'Chưa có prompt để chạy thử nghiệm' };
@@ -669,15 +804,25 @@ export const PromptMixerProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       setIsTestingAi(true);
       try {
-        const response = await fetch('/api/gemini/test', {
+        const activeConfig = { ...aiConfig, ...overrideConfig };
+        const response = await fetch('/api/ai/test', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: targetPrompt }),
+          body: JSON.stringify({
+            prompt: targetPrompt,
+            provider: activeConfig.provider,
+            apiKey: activeConfig.apiKey,
+            endpointUrl: activeConfig.endpointUrl,
+            model: activeConfig.model,
+            temperature: activeConfig.temperature,
+            maxTokens: activeConfig.maxTokens,
+            systemInstruction: activeConfig.systemInstruction,
+          }),
         });
 
         const data = await response.json();
         if (!data.success) {
-          throw new Error(data.error || 'Gemini API call failed');
+          throw new Error(data.error || 'AI API call failed');
         }
 
         const resultObj = {
@@ -685,6 +830,8 @@ export const PromptMixerProvider: React.FC<{ children: React.ReactNode }> = ({ c
           output: data.output,
           durationMs: data.durationMs || 0,
           timestamp: new Date().toISOString(),
+          model: data.model || activeConfig.model,
+          provider: data.provider || activeConfig.provider,
         };
 
         setAiTestResult(resultObj);
@@ -696,17 +843,26 @@ export const PromptMixerProvider: React.FC<{ children: React.ReactNode }> = ({ c
           success: true,
           output: data.output,
           durationMs: data.durationMs,
+          model: data.model,
+          provider: data.provider,
         };
       } catch (err: any) {
         return {
           success: false,
-          error: err.message || 'Lỗi khi gọi thử nghiệm với Gemini',
+          error: err.message || 'Lỗi khi gọi thử nghiệm với AI model',
         };
       } finally {
         setIsTestingAi(false);
       }
     },
-    [compiledPrompt, logPromptAction]
+    [compiledPrompt, aiConfig, logPromptAction]
+  );
+
+  const testPromptWithGemini = useCallback(
+    async (promptText?: string) => {
+      return testPromptWithAI(promptText);
+    },
+    [testPromptWithAI]
   );
 
   const clearAiTestResult = useCallback(() => {
@@ -725,6 +881,8 @@ export const PromptMixerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         detectedVariables,
         canvasVariableDefs,
         compiledPrompt,
+        promptFormat,
+        setPromptFormat,
         setVariableValue,
         resetVariables,
         addBlockToCanvas,
@@ -760,8 +918,14 @@ export const PromptMixerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         exportJsonBackup,
         exportSqlDump,
         importBackupData,
+        importResolvedBatch,
         resetDatabaseToDefaults,
+        switchLibraryLanguage,
+        refreshLibraryFromDb,
         isTestingAi,
+        aiConfig,
+        updateAiConfig,
+        testPromptWithAI,
         testPromptWithGemini,
         aiTestResult,
         clearAiTestResult,

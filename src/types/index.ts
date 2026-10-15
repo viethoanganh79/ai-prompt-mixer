@@ -102,3 +102,115 @@ export interface CategoryMeta {
   textColor: string;
   iconName: string;
 }
+
+// Custom URL Shortener & Backend Settings Types
+export interface ShortenerServiceConfig {
+  customEndpoint: string;
+  apiKey: string;
+  defaultDomain?: string;
+  isVerified?: boolean;
+}
+
+export interface ProSecurityPreferences {
+  defaultMaxViews: number | null; // 1 = burn after reading, null = unlimit
+  defaultExpiresInHours: number | null; // 1, 24, 168 (7 ngày), null = unlimit
+  alwaysRequirePassword: boolean;
+}
+
+export interface UserCloudSettings {
+  userId: string;
+  email: string;
+  displayName?: string;
+  photoURL?: string;
+  isPro: boolean;
+  proPlan?: 'monthly' | 'yearly' | 'lifetime';
+  proExpiresAt?: string;
+  shortener: ShortenerServiceConfig;
+  securityPreferences: ProSecurityPreferences;
+  backendSyncEndpoint?: string;
+  lastSyncedAt?: string;
+  updatedAt: string;
+}
+
+export interface ProSecurityOptions {
+  password?: string;
+  maxViews?: number | null; // 1 (burn after reading), 5, 20, null = unlimit
+  expiresInHours?: number | null; // 1, 24, 168, 720, null = vĩnh viễn
+  customAlias?: string;
+}
+
+export interface ShortenLinkResponse {
+  shortUrl: string;
+  slug: string;
+  createdAt?: string;
+  expiresAt?: string | null;
+  maxViews?: number | null;
+  hasPassword?: boolean;
+  isBurnAfterReading?: boolean;
+  authorBadge?: string;
+}
+
+export interface AuthUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  isPro: boolean;
+  proPlan?: string;
+  proExpiresAt?: string;
+}
+
+// Zero-Knowledge Multi-Device Sync Types
+export interface ZeroKnowledgeSyncSummary {
+  blocksCount: number;
+  presetsCount: number;
+  timestamp: string;
+  deviceId: string;
+  deviceName: string;
+  clientVersion: string;
+  byteSize: number;
+}
+
+export interface EncryptedSyncPackage {
+  version: number;
+  format: 'zero-knowledge-aes-gcm-256';
+  salt: string;
+  iv: string;
+  ciphertext: string;
+  keyCheckHash: string;
+  summary: ZeroKnowledgeSyncSummary;
+}
+
+export interface DecryptedPromptPayload {
+  version: number;
+  exportedAt: string;
+  blocks: PromptBlock[];
+  presets: PromptPreset[];
+  canvasItems?: CanvasBlock[];
+  settings?: Record<string, any>;
+}
+
+export type CloudSyncMergeMode = 'smart_merge' | 'overwrite';
+
+// Prompt Output Formats
+export type PromptOutputFormat = 'xml' | 'markdown';
+
+// External AI Playground Model Configuration (Pro Feature)
+export type AIModelProvider =
+  | 'built-in' // Server default Gemini
+  | 'gemini'   // Custom Google Gemini API Key
+  | 'openai'   // OpenAI (GPT-4o, etc.)
+  | 'anthropic'// Anthropic (Claude 3.5 Sonnet, etc.)
+  | 'openrouter' // OpenRouter (Llama 3.3, Claude, DeepSeek, etc.)
+  | 'groq'     // Groq Ultra-fast inference
+  | 'custom';  // Custom OpenAI-compatible endpoint (Ollama, vLLM, DeepSeek, etc.)
+
+export interface CustomAIConfig {
+  provider: AIModelProvider;
+  apiKey: string;
+  endpointUrl?: string;
+  model: string;
+  temperature: number;
+  maxTokens?: number;
+  systemInstruction?: string;
+}

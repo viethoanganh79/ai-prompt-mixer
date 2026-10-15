@@ -9,8 +9,9 @@ import {
   Info,
 } from 'lucide-react';
 import { usePromptMixer } from '../context/PromptMixerContext';
+import { useLanguage } from '../i18n/LanguageContext';
 import { PromptBlock, PromptCategory } from '../types';
-import { CATEGORY_MAP } from '../utils/categoryMeta';
+import { CATEGORY_MAP, getCategoryMeta, CATEGORY_LIST } from '../utils/categoryMeta';
 import {
   extractVariablesFromText,
   encodeVariableTag,
@@ -32,6 +33,7 @@ export const BlockEditorModal: React.FC<BlockEditorModalProps> = ({
   onShowToast,
 }) => {
   const { createCustomBlock, updateLibraryBlock } = usePromptMixer();
+  const { t, isVietnamese, language } = useLanguage();
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<PromptCategory>('custom');
@@ -131,7 +133,7 @@ export const BlockEditorModal: React.FC<BlockEditorModalProps> = ({
           description: description.trim(),
           tags,
         });
-        onShowToast('success', 'Đã cập nhật block', `"${title}"`);
+        onShowToast('success', isVietnamese ? 'Đã cập nhật block' : 'Block updated', `"${title}"`);
       } else {
         await createCustomBlock({
           title: title.trim(),
@@ -141,12 +143,16 @@ export const BlockEditorModal: React.FC<BlockEditorModalProps> = ({
           tags,
           isCustom: true,
         });
-        onShowToast('success', 'Đã tạo block mới', `"${title}" đã lưu vào thư viện.`);
+        onShowToast(
+          'success',
+          isVietnamese ? 'Đã tạo block mới' : 'Created new block',
+          isVietnamese ? `"${title}" đã lưu vào thư viện.` : `"${title}" saved to library.`
+        );
       }
 
       onClose();
     } catch {
-      onShowToast('error', 'Lỗi khi lưu block');
+      onShowToast('error', isVietnamese ? 'Lỗi khi lưu block' : 'Failed to save block');
     } finally {
       setSaving(false);
     }
@@ -169,10 +175,12 @@ export const BlockEditorModal: React.FC<BlockEditorModalProps> = ({
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
-                {initialBlock ? 'Chỉnh sửa Prompt Block' : 'Tạo Prompt Block mới'}
+                {initialBlock
+                  ? (isVietnamese ? 'Chỉnh sửa Prompt Block' : 'Edit Prompt Block')
+                  : (isVietnamese ? 'Tạo Prompt Block mới' : 'Create New Prompt Block')}
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                Lưu vào thư viện SQLite/IndexedDB cục bộ và đồng bộ tự động
+                {isVietnamese ? 'Lưu vào thư viện SQLite/IndexedDB cục bộ và đồng bộ tự động' : 'Save to local IndexedDB library & auto-sync'}
               </p>
             </div>
           </div>
@@ -190,45 +198,48 @@ export const BlockEditorModal: React.FC<BlockEditorModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 block mb-1.5">
-                Tiêu đề Block:
+                {isVietnamese ? 'Tiêu đề Block:' : 'Block Title:'}
               </label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ví dụ: Giám đốc Marketing B2B"
+                placeholder={isVietnamese ? 'Ví dụ: Giám đốc Marketing B2B' : 'E.g., Senior B2B Marketing Director'}
                 className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
               />
             </div>
 
             <div>
               <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 block mb-1.5">
-                Danh mục (Category):
+                {isVietnamese ? 'Danh mục (Category):' : 'Category:'}
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as PromptCategory)}
                 className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
               >
-                {Object.entries(CATEGORY_MAP).map(([key, val]) => (
-                  <option key={key} value={key}>
-                    {val.label}
-                  </option>
-                ))}
+                {CATEGORY_LIST.map((catKey) => {
+                  const meta = getCategoryMeta(catKey, language);
+                  return (
+                    <option key={catKey} value={catKey}>
+                      {meta.label}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           </div>
 
           <div>
             <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 block mb-1.5">
-              Mô tả ngắn:
+              {isVietnamese ? 'Mô tả ngắn:' : 'Short Description:'}
             </label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Giải thích ngắn gọn tác dụng của khối này..."
+              placeholder={isVietnamese ? 'Giải thích ngắn gọn tác dụng của khối này...' : 'Briefly describe what this block accomplishes...'}
               className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
             />
           </div>
@@ -477,7 +488,7 @@ export const BlockEditorModal: React.FC<BlockEditorModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 hover:underline"
             >
-              Hủy
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -485,7 +496,13 @@ export const BlockEditorModal: React.FC<BlockEditorModalProps> = ({
               className="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 disabled:opacity-50 transition-colors shadow-md shadow-indigo-500/20"
             >
               <Check className="w-4 h-4" />
-              <span>{saving ? 'Đang lưu...' : initialBlock ? 'Lưu cập nhật' : 'Tạo Block mới'}</span>
+              <span>
+                {saving
+                  ? t('common.saving')
+                  : initialBlock
+                  ? (isVietnamese ? 'Lưu cập nhật' : 'Update Block')
+                  : (isVietnamese ? 'Tạo Block mới' : 'Create Block')}
+              </span>
             </button>
           </div>
         </form>

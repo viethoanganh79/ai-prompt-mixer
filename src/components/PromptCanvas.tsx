@@ -24,8 +24,9 @@ import {
   Type,
 } from 'lucide-react';
 import { usePromptMixer } from '../context/PromptMixerContext';
+import { useLanguage } from '../i18n/LanguageContext';
 import { CanvasBlock } from '../types';
-import { CATEGORY_MAP } from '../utils/categoryMeta';
+import { getCategoryMeta, CATEGORY_MAP } from '../utils/categoryMeta';
 import { getVariableDefaultOptions } from '../utils/variableOptions';
 import { extractVariablesFromText } from '../utils/variableParser';
 
@@ -58,6 +59,8 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
     toggleVariableOption,
     resetVariables,
   } = usePromptMixer();
+
+  const { t, isVietnamese, language } = useLanguage();
 
   const [expandedEditId, setExpandedEditId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState<string>('');
@@ -99,7 +102,7 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
   const handleSaveEdit = (instanceId: string) => {
     updateCanvasItemContent(instanceId, editingContent);
     setExpandedEditId(null);
-    onShowToast('success', 'Đã lưu chỉnh sửa block trên canvas');
+    onShowToast('success', isVietnamese ? 'Đã lưu chỉnh sửa block trên canvas' : 'Saved block edits on canvas');
   };
 
   const handleSaveToLibrary = async (item: CanvasBlock) => {
@@ -114,9 +117,13 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
         content: editingContent,
         variables: extractedVars,
       });
-      onShowToast('success', 'Đã cập nhật vào thư viện gốc!', `"${originalBlock.title}" đã được lưu.`);
+      onShowToast(
+        'success',
+        isVietnamese ? 'Đã cập nhật vào thư viện gốc!' : 'Updated library block!',
+        isVietnamese ? `"${originalBlock.title}" đã được lưu.` : `"${originalBlock.title}" saved.`
+      );
     } else {
-      onShowToast('info', 'Đã lưu trên canvas');
+      onShowToast('info', isVietnamese ? 'Đã lưu trên canvas' : 'Saved on canvas');
     }
     setExpandedEditId(null);
   };
@@ -131,21 +138,21 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
           setVariableValue(v, defaultInfo.options[0]);
         }
       } else {
-        let sampleVal = 'Giá trị mẫu';
+        let sampleVal = isVietnamese ? 'Giá trị mẫu' : 'Sample value';
         const lower = v.toLowerCase();
         if (lower.includes('tech') || lower.includes('stack')) sampleVal = 'React 19, TypeScript';
-        else if (lower.includes('niche')) sampleVal = 'SaaS AI & Tự động hoá';
-        else if (lower.includes('domain')) sampleVal = 'E-commerce & Tài chính số';
-        else if (lower.includes('audience')) sampleVal = 'Nhà sáng lập & Kỹ sư AI';
+        else if (lower.includes('niche')) sampleVal = isVietnamese ? 'SaaS AI & Tự động hoá' : 'B2B SaaS & AI Automation';
+        else if (lower.includes('domain')) sampleVal = isVietnamese ? 'E-commerce & Tài chính số' : 'E-commerce & Digital Finance';
+        else if (lower.includes('audience')) sampleVal = isVietnamese ? 'Nhà sáng lập & Kỹ sư AI' : 'Founders & AI Engineers';
         else if (lower.includes('product')) sampleVal = 'AI Prompt Mixer Studio';
-        else if (lower.includes('goal')) sampleVal = 'Tối ưu tỷ lệ chuyển đổi & tăng năng suất';
+        else if (lower.includes('goal')) sampleVal = isVietnamese ? 'Tối ưu tỷ lệ chuyển đổi & tăng năng suất' : 'Optimize conversion & boost productivity';
         else if (lower.includes('limit') || lower.includes('count')) sampleVal = '3';
         else if (lower.includes('name')) sampleVal = 'PromptCraft Pro';
 
         setVariableValue(v, sampleVal);
       }
     });
-    onShowToast('info', 'Đã điền giá trị mẫu cho các biến');
+    onShowToast('info', isVietnamese ? 'Đã điền giá trị mẫu cho các biến' : 'Populated sample values for variables');
   };
 
   const getEffectiveMode = (varName: string): 'text' | 'single' | 'multi' => {
@@ -215,7 +222,7 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
             </h2>
           </div>
           <span className="text-xs px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200 dark:border-slate-700">
-            {activeCount}/{canvasItems.length} blocks đang kích hoạt
+            {activeCount}/{canvasItems.length} {t('canvas.activeBlocksCount')}
           </span>
         </div>
 
@@ -224,19 +231,23 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
             <>
               <button
                 onClick={onOpenSavePreset}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 transition-colors shadow-xs"
-                title="Lưu các block này thành preset tái sử dụng"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 transition-colors shadow-xs cursor-pointer"
+                title={t('canvas.savePreset')}
               >
                 <BookmarkPlus className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span>Lưu Preset</span>
+                <span>{t('canvas.savePreset')}</span>
               </button>
 
               <button
-                onClick={clearCanvas}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                onClick={() => {
+                  if (confirm(t('canvas.clearConfirm'))) {
+                    clearCanvas();
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5 text-slate-400" />
-                <span>Xóa trắng</span>
+                <span>{t('canvas.clearCanvas')}</span>
               </button>
             </>
           )}
@@ -256,22 +267,22 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
             <div className="flex items-center gap-2">
               <Sliders className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span className="text-xs sm:text-sm font-bold text-amber-900 dark:text-amber-200">
-                Biến số ({detectedVariables.length} biến)
+                {t('canvas.variablesSectionTitle')} ({detectedVariables.length} {t('sidebar.variablesFound')})
               </span>
             </div>
             <div className="flex items-center gap-2.5">
               <button
                 onClick={handleAutofillSamples}
-                className="text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                Điền mẫu
+                <span>{isVietnamese ? 'Điền mẫu' : 'Autofill'}</span>
               </button>
               <button
                 onClick={resetVariables}
-                className="text-xs font-medium text-amber-700/70 dark:text-amber-400/70 hover:underline"
+                className="text-xs font-medium text-amber-700/70 dark:text-amber-400/70 hover:underline cursor-pointer"
               >
-                Xóa rỗng
+                {t('canvas.resetVariables')}
               </button>
             </div>
           </div>
@@ -309,14 +320,14 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
                           setVariableModes((prev) => ({ ...prev, [v]: 'text' }));
                           setManualInputVars((prev) => ({ ...prev, [v]: true }));
                         }}
-                        className={`px-1.5 py-0.5 rounded transition-all ${
+                        className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
                           currentMode === 'text'
                             ? 'bg-white dark:bg-slate-700 text-amber-900 dark:text-amber-200 shadow-2xs font-bold'
                             : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                         }`}
-                        title="Tự do gõ văn bản"
+                        title={isVietnamese ? 'Tự do gõ văn bản' : 'Free text input'}
                       >
-                        Tự điền
+                        {isVietnamese ? 'Tự điền' : 'Text'}
                       </button>
                       <button
                         type="button"
@@ -324,14 +335,14 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
                           setVariableModes((prev) => ({ ...prev, [v]: 'single' }));
                           setManualInputVars((prev) => ({ ...prev, [v]: false }));
                         }}
-                        className={`px-1.5 py-0.5 rounded transition-all ${
+                        className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
                           currentMode === 'single'
                             ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 shadow-2xs font-bold'
                             : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                         }`}
-                        title="Dropdown chọn 1 mục"
+                        title={isVietnamese ? 'Dropdown chọn 1 mục' : 'Single select dropdown'}
                       >
-                        Chọn 1
+                        {isVietnamese ? 'Chọn 1' : 'Single'}
                       </button>
                       <button
                         type="button"
@@ -339,14 +350,14 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
                           setVariableModes((prev) => ({ ...prev, [v]: 'multi' }));
                           setManualInputVars((prev) => ({ ...prev, [v]: false }));
                         }}
-                        className={`px-1.5 py-0.5 rounded transition-all ${
+                        className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
                           currentMode === 'multi'
                             ? 'bg-white dark:bg-slate-700 text-purple-700 dark:text-purple-300 shadow-2xs font-bold'
                             : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                         }`}
-                        title="Dropdown chọn nhiều mục"
+                        title={isVietnamese ? 'Dropdown chọn nhiều mục' : 'Multi select dropdown'}
                       >
-                        Chọn nhiều
+                        {isVietnamese ? 'Chọn nhiều' : 'Multi'}
                       </button>
                     </div>
                   </div>
@@ -673,24 +684,24 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
               <Wand2 className="w-7 h-7" />
             </div>
             <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
-              Mixer Canvas đang trống
+              {t('canvas.emptyTitle')}
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mt-1 mb-5 leading-relaxed">
-              Chọn các khối prompt từ thanh bên trái (Persona, Bối cảnh, Nhiệm vụ, Ràng buộc, Định dạng đầu ra) để ghép thành một siêu prompt hoàn chỉnh.
+              {t('canvas.emptyDesc')}
             </p>
             <div className="flex items-center gap-3">
               <button
                 onClick={onOpenNewBlock}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 flex items-center gap-1.5 transition-all"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
-                Tạo Block tùy chỉnh
+                <span>{isVietnamese ? 'Tạo Block tùy chỉnh' : 'Create Custom Block'}</span>
               </button>
             </div>
           </div>
         ) : (
           canvasItems.map((item, index) => {
-            const meta = CATEGORY_MAP[item.category] || CATEGORY_MAP.custom;
+            const meta = getCategoryMeta(item.category, language);
             const isEditing = expandedEditId === item.instanceId;
 
             return (
@@ -729,16 +740,16 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
                     <button
                       onClick={() => moveCanvasItemUp(item.instanceId)}
                       disabled={index === 0}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 transition-colors"
-                      title="Di chuyển lên"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 transition-colors cursor-pointer"
+                      title={t('canvas.moveUp')}
                     >
                       <ArrowUp className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => moveCanvasItemDown(item.instanceId)}
                       disabled={index === canvasItems.length - 1}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 transition-colors"
-                      title="Di chuyển xuống"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 transition-colors cursor-pointer"
+                      title={t('canvas.moveDown')}
                     >
                       <ArrowDown className="w-4 h-4" />
                     </button>
@@ -746,12 +757,12 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
                     {/* Enable / Disable toggle */}
                     <button
                       onClick={() => toggleCanvasItem(item.instanceId)}
-                      className={`p-1.5 rounded-lg transition-colors ${
+                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                         item.isEnabled
                           ? 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
                           : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
-                      title={item.isEnabled ? 'Tắt block khỏi prompt' : 'Kích hoạt lại block'}
+                      title={item.isEnabled ? (isVietnamese ? 'Tắt block khỏi prompt' : 'Disable block') : (isVietnamese ? 'Kích hoạt lại block' : 'Enable block')}
                     >
                       {item.isEnabled ? (
                         <Eye className="w-4 h-4" />
@@ -763,12 +774,12 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
                     {/* Edit Content Toggle */}
                     <button
                       onClick={() => handleStartEdit(item)}
-                      className={`p-1.5 rounded-lg transition-colors ${
+                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                         isEditing
                           ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/60'
                           : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
-                      title="Chỉnh sửa nội dung block này"
+                      title={t('common.edit')}
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
@@ -776,8 +787,8 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
                     {/* Duplicate */}
                     <button
                       onClick={() => duplicateCanvasItem(item.instanceId)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                      title="Nhân bản block này"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      title={t('canvas.duplicate')}
                     >
                       <Copy className="w-4 h-4" />
                     </button>
@@ -785,8 +796,8 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
                     {/* Delete from Canvas */}
                     <button
                       onClick={() => removeCanvasItem(item.instanceId)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                      title="Gỡ khỏi Canvas"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                      title={t('common.remove')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -805,30 +816,30 @@ export const PromptCanvas: React.FC<PromptCanvasProps> = ({
                       />
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-xs text-slate-400">
-                          {editingContent.length} ký tự
+                          {editingContent.length} {t('common.chars')}
                         </span>
 
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setExpandedEditId(null)}
-                            className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:underline"
+                            className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:underline cursor-pointer"
                           >
-                            Hủy
+                            {t('common.cancel')}
                           </button>
                           <button
                             onClick={() => handleSaveEdit(item.instanceId)}
-                            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 transition-colors shadow-xs"
+                            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                           >
                             <Check className="w-3.5 h-3.5" />
-                            <span>Lưu trên Canvas</span>
+                            <span>{isVietnamese ? 'Lưu trên Canvas' : 'Save on Canvas'}</span>
                           </button>
                           <button
                             onClick={() => handleSaveToLibrary(item)}
-                            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 transition-colors shadow-xs"
-                            title="Lưu cả vào thư viện gốc để dùng lần sau"
+                            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                            title={isVietnamese ? 'Lưu cả vào thư viện gốc để dùng lần sau' : 'Update original block in library'}
                           >
                             <Save className="w-3.5 h-3.5" />
-                            <span>Lưu vào Thư viện gốc</span>
+                            <span>{isVietnamese ? 'Lưu vào Thư viện gốc' : 'Save to Library'}</span>
                           </button>
                         </div>
                       </div>

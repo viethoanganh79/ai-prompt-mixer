@@ -1,5 +1,5 @@
 import { PromptBlock, PromptPreset, UserLog, SyncConfig } from '../types';
-import { DEFAULT_BLOCKS, DEFAULT_PRESETS } from './defaultData';
+import { DEFAULT_BLOCKS, DEFAULT_PRESETS, getDefaultBlocks, getDefaultPresets } from './defaultData';
 
 const DB_NAME = 'ai_prompt_mixer_db';
 const DB_VERSION = 1;
@@ -190,6 +190,19 @@ export class LocalDbEngine {
 
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
+    });
+  }
+
+  async bulkInsertPresets(presets: PromptPreset[]): Promise<void> {
+    await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction('presets', 'readwrite');
+      const store = tx.objectStore('presets');
+
+      presets.forEach((p) => store.put(p));
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
     });
   }
 
@@ -443,8 +456,11 @@ export class LocalDbEngine {
     }
   }
 
-  async resetToDefaults(): Promise<void> {
+  async resetToDefaults(lang: 'vi' | 'en' = 'vi'): Promise<void> {
     await this.init();
+    const blocks = getDefaultBlocks(lang);
+    const presets = getDefaultPresets(lang);
+
     return new Promise((resolve, reject) => {
       const tx = this.db!.transaction(['blocks', 'presets'], 'readwrite');
       const blockStore = tx.objectStore('blocks');
@@ -453,10 +469,61 @@ export class LocalDbEngine {
       blockStore.clear();
       presetStore.clear();
 
-      DEFAULT_BLOCKS.forEach((b) => blockStore.put(b));
-      DEFAULT_PRESETS.forEach((p) => presetStore.put(p));
+      blocks.forEach((b) => blockStore.put(b));
+      presets.forEach((p) => presetStore.put(p));
 
       tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async switchDefaultLanguage(lang: 'vi' | 'en'): Promise<{ updatedBlocks: PromptBlock[]; updatedPresets: PromptPreset[] }> {
+    await this.init();
+    const currentBlocks = await this.getAllBlocks();
+    const targetDefBlocks = getDefaultBlocks(lang);
+    const targetDefPresets = getDefaultPresets(lang);
+    const targetBlockMap = new Map(targetDefBlocks.map((b) => [b.id, b]));
+
+    const finalBlocks: PromptBlock[] = [];
+    for (const block of currentBlocks) {
+      if (targetBlockMap.has(block.id) && !block.isCustom) {
+        finalBlocks.push(targetBlockMap.get(block.id)!);
+        targetBlockMap.delete(block.id);
+      } else {
+        finalBlocks.push(block);
+      }
+    }
+    targetBlockMap.forEach((block) => {
+      finalBlocks.push(block);
+    });
+
+    const currentPresets = await this.getAllPresets();
+    const targetPresetMap = new Map(targetDefPresets.map((p) => [p.id, p]));
+    const finalPresets: PromptPreset[] = [];
+    for (const preset of currentPresets) {
+      if (targetPresetMap.has(preset.id)) {
+        finalPresets.push(targetPresetMap.get(preset.id)!);
+        targetPresetMap.delete(preset.id);
+      } else {
+        finalPresets.push(preset);
+      }
+    }
+    targetPresetMap.forEach((preset) => {
+      finalPresets.push(preset);
+    });
+
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(['blocks', 'presets'], 'readwrite');
+      const blockStore = tx.objectStore('blocks');
+      const presetStore = tx.objectStore('presets');
+
+      blockStore.clear();
+      presetStore.clear();
+
+      finalBlocks.forEach((b) => blockStore.put(b));
+      finalPresets.forEach((p) => presetStore.put(p));
+
+      tx.oncomplete = () => resolve({ updatedBlocks: finalBlocks, updatedPresets: finalPresets });
       tx.onerror = () => reject(tx.error);
     });
   }

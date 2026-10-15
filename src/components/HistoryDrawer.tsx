@@ -20,6 +20,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { usePromptMixer } from '../context/PromptMixerContext';
+import { useLanguage } from '../i18n/LanguageContext';
 import { UserLog, LogAttachment } from '../types';
 
 interface HistoryDrawerProps {
@@ -38,6 +39,8 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
     addLogAttachment,
     removeLogAttachment,
   } = usePromptMixer();
+
+  const { t, isVietnamese } = useLanguage();
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedAiId, setCopiedAiId] = useState<string | null>(null);
@@ -63,10 +66,13 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
     try {
       await navigator.clipboard.writeText(log.promptText);
       setCopiedId(log.id);
-      onShowToast('success', 'Đã sao chép prompt từ lịch sử!');
+      onShowToast(
+        'success',
+        isVietnamese ? 'Đã sao chép prompt từ lịch sử!' : 'Copied prompt from history!'
+      );
       setTimeout(() => setCopiedId(null), 2000);
     } catch {
-      onShowToast('error', 'Lỗi sao chép');
+      onShowToast('error', isVietnamese ? 'Lỗi sao chép' : 'Copy error');
     }
   };
 
@@ -75,10 +81,13 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
     try {
       await navigator.clipboard.writeText(log.aiResponse);
       setCopiedAiId(log.id);
-      onShowToast('success', 'Đã sao chép phản hồi AI!');
+      onShowToast(
+        'success',
+        isVietnamese ? 'Đã sao chép phản hồi AI!' : 'Copied AI response!'
+      );
       setTimeout(() => setCopiedAiId(null), 2000);
     } catch {
-      onShowToast('error', 'Lỗi sao chép');
+      onShowToast('error', isVietnamese ? 'Lỗi sao chép' : 'Copy error');
     }
   };
 
@@ -86,14 +95,17 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
     await deleteLog(logId);
     setConfirmDeleteLogId(null);
     setSelectedLogIds((prev) => prev.filter((id) => id !== logId));
-    onShowToast('info', 'Đã xóa bản ghi lịch sử');
+    onShowToast('info', isVietnamese ? 'Đã xóa bản ghi lịch sử' : 'Log entry deleted');
   };
 
   const handleConfirmClearAll = async () => {
     await clearHistory();
     setShowClearAllConfirm(false);
     setSelectedLogIds([]);
-    onShowToast('info', 'Đã xóa toàn bộ lịch sử prompt');
+    onShowToast(
+      'info',
+      isVietnamese ? 'Đã xóa toàn bộ lịch sử prompt' : 'Prompt history cleared'
+    );
   };
 
   const handleConfirmBatchDelete = async () => {
@@ -199,10 +211,12 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                Lịch sử Prompt ({logs.length})
+                {isVietnamese ? `Lịch sử Prompt (${logs.length})` : `Prompt History (${logs.length})`}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Ghi lại lịch sử sao chép & quản lý tệp output AI
+                {isVietnamese
+                  ? 'Ghi lại lịch sử sao chép & quản lý tệp output AI'
+                  : 'Activity logs and AI output attachments'}
               </p>
             </div>
           </div>
@@ -212,10 +226,10 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
               <button
                 onClick={() => setShowClearAllConfirm(true)}
                 className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 flex items-center gap-1 transition-colors"
-                title="Xóa toàn bộ lịch sử"
+                title={isVietnamese ? 'Xóa toàn bộ lịch sử' : 'Clear all history'}
               >
                 <Trash2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Xóa hết</span>
+                <span className="hidden sm:inline">{isVietnamese ? 'Xóa hết' : 'Clear All'}</span>
               </button>
             )}
             <button
@@ -232,20 +246,24 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
           <div className="p-3.5 bg-rose-50 dark:bg-rose-950/70 border-b border-rose-200 dark:border-rose-900 flex items-center justify-between gap-3 animate-in fade-in">
             <div className="flex items-center gap-2 text-rose-800 dark:text-rose-200 text-xs font-semibold">
               <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-              <span>Xác nhận xóa sạch {logs.length} bản ghi lịch sử? Không thể hoàn tác.</span>
+              <span>
+                {isVietnamese
+                  ? `Xác nhận xóa sạch ${logs.length} bản ghi lịch sử? Không thể hoàn tác.`
+                  : `Confirm deleting all ${logs.length} history records? This cannot be undone.`}
+              </span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={handleConfirmClearAll}
                 className="px-2.5 py-1 rounded-md text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-colors"
               >
-                Xóa tất cả
+                {isVietnamese ? 'Xóa tất cả' : 'Delete All'}
               </button>
               <button
                 onClick={() => setShowClearAllConfirm(false)}
                 className="px-2 py-1 rounded-md text-xs text-slate-600 dark:text-slate-300 hover:bg-rose-100 dark:hover:bg-rose-900/40"
               >
-                Hủy
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -254,7 +272,7 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
         {/* Action Filter Pills & Bulk Select Controls */}
         <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-2">
-            <span className="text-slate-400 font-medium">Lọc:</span>
+            <span className="text-slate-400 font-medium">{isVietnamese ? 'Lọc:' : 'Filter:'}</span>
             <button
               onClick={() => setFilterAction('all')}
               className={`px-3 py-1 rounded-full font-semibold transition-all ${
@@ -263,7 +281,7 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
               }`}
             >
-              Tất cả ({logs.length})
+              {isVietnamese ? `Tất cả (${logs.length})` : `All (${logs.length})`}
             </button>
             <button
               onClick={() => setFilterAction('copied')}
@@ -273,7 +291,9 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
               }`}
             >
-              Đã chép ({logs.filter((l) => l.action === 'copied').length})
+              {isVietnamese
+                ? `Đã chép (${logs.filter((l) => l.action === 'copied').length})`
+                : `Copied (${logs.filter((l) => l.action === 'copied').length})`}
             </button>
             <button
               onClick={() => setFilterAction('tested')}
@@ -283,7 +303,9 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
               }`}
             >
-              Đã test ({logs.filter((l) => l.action === 'tested').length})
+              {isVietnamese
+                ? `Đã test (${logs.filter((l) => l.action === 'tested').length})`
+                : `Tested (${logs.filter((l) => l.action === 'tested').length})`}
             </button>
           </div>
 
@@ -298,7 +320,13 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                 <Square className="w-3.5 h-3.5" />
               )}
               <span>
-                {selectedLogIds.length === filteredLogs.length ? 'Bỏ chọn hết' : 'Chọn tất cả'}
+                {selectedLogIds.length === filteredLogs.length
+                  ? isVietnamese
+                    ? 'Bỏ chọn hết'
+                    : 'Deselect all'
+                  : isVietnamese
+                  ? 'Chọn tất cả'
+                  : 'Select all'}
               </span>
             </button>
           )}
@@ -308,7 +336,9 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
         {selectedLogIds.length > 0 && (
           <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-950/60 border-b border-indigo-200 dark:border-indigo-800 flex items-center justify-between text-xs animate-in fade-in">
             <span className="font-semibold text-indigo-900 dark:text-indigo-200">
-              Đã chọn <strong>{selectedLogIds.length}</strong> bản ghi
+              {isVietnamese
+                ? `Đã chọn ${selectedLogIds.length} bản ghi`
+                : `${selectedLogIds.length} records selected`}
             </span>
 
             <div className="flex items-center gap-2">
@@ -318,13 +348,15 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                     onClick={handleConfirmBatchDelete}
                     className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-700 text-white font-bold"
                   >
-                    Xác nhận xóa {selectedLogIds.length} mục
+                    {isVietnamese
+                      ? `Xác nhận xóa ${selectedLogIds.length} mục`
+                      : `Confirm delete ${selectedLogIds.length} items`}
                   </button>
                   <button
                     onClick={() => setConfirmBatchDelete(false)}
                     className="px-2 py-1 rounded text-slate-600 dark:text-slate-300 hover:bg-slate-200"
                   >
-                    Hủy
+                    {t('common.cancel')}
                   </button>
                 </div>
               ) : (
@@ -333,7 +365,7 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                   className="px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 font-semibold border border-rose-200 dark:border-rose-800 flex items-center gap-1"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>Xóa mục đã chọn</span>
+                  <span>{isVietnamese ? 'Xóa mục đã chọn' : 'Delete selected'}</span>
                 </button>
               )}
 
@@ -341,7 +373,7 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                 onClick={() => setSelectedLogIds([])}
                 className="text-slate-500 hover:text-slate-700 dark:text-slate-400 p-1"
               >
-                Bỏ chọn
+                {isVietnamese ? 'Bỏ chọn' : 'Deselect'}
               </button>
             </div>
           </div>
@@ -353,10 +385,12 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
             <div className="text-center py-16 text-slate-400">
               <History className="w-10 h-10 mx-auto mb-2 opacity-30 text-slate-400" />
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                Không tìm thấy bản ghi lịch sử nào
+                {isVietnamese ? 'Không tìm thấy bản ghi lịch sử nào' : 'No history records found'}
               </p>
               <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
-                Khi bạn sao chép hoặc chạy thử nghiệm prompt, các bản ghi sẽ xuất hiện tại đây.
+                {isVietnamese
+                  ? 'Khi bạn sao chép hoặc chạy thử nghiệm prompt, các bản ghi sẽ xuất hiện tại đây.'
+                  : 'History logs will appear here when you copy or test prompts.'}
               </p>
             </div>
           ) : (
@@ -410,25 +444,27 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                       {/* Delete Single Log with Inline Confirmation */}
                       {isConfirmDelete ? (
                         <div className="flex items-center gap-1 bg-rose-50 dark:bg-rose-950 px-2 py-0.5 rounded-lg border border-rose-200 dark:border-rose-800 animate-in fade-in">
-                          <span className="text-[10px] font-bold text-rose-600">Xóa?</span>
+                          <span className="text-[10px] font-bold text-rose-600">
+                            {isVietnamese ? 'Xóa?' : 'Delete?'}
+                          </span>
                           <button
                             onClick={() => handleConfirmDeleteSingle(log.id)}
                             className="px-1.5 py-0.5 rounded bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold"
                           >
-                            Xác nhận
+                            {isVietnamese ? 'Xác nhận' : 'Confirm'}
                           </button>
                           <button
                             onClick={() => setConfirmDeleteLogId(null)}
                             className="px-1 py-0.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 text-[10px]"
                           >
-                            Hủy
+                            {t('common.cancel')}
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => setConfirmDeleteLogId(log.id)}
                           className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                          title="Xóa bản ghi này"
+                          title={isVietnamese ? 'Xóa bản ghi này' : 'Delete log entry'}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -454,13 +490,19 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                       <div className="p-3 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-800 space-y-2">
                         <label className="text-xs font-bold text-purple-900 dark:text-purple-200 flex items-center gap-1.5">
                           <Bot className="w-4 h-4 text-purple-600" />
-                          <span>Chỉnh sửa / Dán kết quả AI:</span>
+                          <span>
+                            {isVietnamese ? 'Chỉnh sửa / Dán kết quả AI:' : 'Edit / Paste AI result:'}
+                          </span>
                         </label>
                         <textarea
                           rows={4}
                           value={editingAiText}
                           onChange={(e) => setEditingAiText(e.target.value)}
-                          placeholder="Dán câu trả lời nhận được từ ChatGPT, Claude, Gemini..."
+                          placeholder={
+                            isVietnamese
+                              ? 'Dán câu trả lời nhận được từ ChatGPT, Claude, Gemini...'
+                              : 'Paste response received from ChatGPT, Claude, Gemini...'
+                          }
                           className="w-full p-2.5 text-xs font-sans rounded-lg border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                         />
                         <div className="flex items-center justify-end gap-2">
@@ -468,14 +510,14 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                             onClick={() => setEditingAiLogId(null)}
                             className="px-2.5 py-1 text-xs text-slate-600 dark:text-slate-400 hover:underline"
                           >
-                            Hủy
+                            {t('common.cancel')}
                           </button>
                           <button
                             onClick={() => handleSaveAi(log.id)}
                             className="px-3 py-1 rounded-md text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-1"
                           >
                             <Save className="w-3.5 h-3.5" />
-                            <span>Lưu kết quả</span>
+                            <span>{isVietnamese ? 'Lưu kết quả' : 'Save'}</span>
                           </button>
                         </div>
                       </div>
@@ -485,32 +527,36 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-purple-900 dark:text-purple-200 flex items-center gap-1.5">
                             <Bot className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                            <span>Kết quả AI {log.durationMs ? `(${log.durationMs}ms)` : ''}</span>
+                            <span>
+                              {isVietnamese
+                                ? `Kết quả AI ${log.durationMs ? `(${log.durationMs}ms)` : ''}`
+                                : `AI Response ${log.durationMs ? `(${log.durationMs}ms)` : ''}`}
+                            </span>
                           </span>
                           <div className="flex items-center gap-1.5 text-xs">
                             <button
                               onClick={() => handleCopyAi(log)}
                               className="px-2 py-0.5 rounded text-[11px] font-semibold bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 flex items-center gap-1"
-                              title="Sao chép câu trả lời của AI"
+                              title={isVietnamese ? 'Sao chép câu trả lời của AI' : 'Copy AI response'}
                             >
                               {isCopiedAi ? (
                                 <Check className="w-3 h-3 text-emerald-500" />
                               ) : (
                                 <Copy className="w-3 h-3" />
                               )}
-                              <span>{isCopiedAi ? 'Đã chép' : 'Chép AI'}</span>
+                              <span>{isCopiedAi ? (isVietnamese ? 'Đã chép' : 'Copied') : (isVietnamese ? 'Chép AI' : 'Copy')}</span>
                             </button>
                             <button
                               onClick={() => handleStartEditAi(log)}
                               className="p-1 rounded text-purple-600 hover:text-purple-800 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/40"
-                              title="Sửa nội dung phản hồi AI"
+                              title={isVietnamese ? 'Sửa nội dung phản hồi AI' : 'Edit AI response'}
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleRemoveAiOutput(log.id)}
                               className="p-1 rounded text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                              title="Xóa phản hồi AI"
+                              title={isVietnamese ? 'Xóa phản hồi AI' : 'Delete AI response'}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -528,7 +574,9 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                     <div className="space-y-1.5 pt-1">
                       <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                         <Paperclip className="w-3 h-3 text-indigo-500" />
-                        Tệp kết quả đính kèm ({log.attachments!.length}):
+                        {isVietnamese
+                          ? `Tệp kết quả đính kèm (${log.attachments!.length}):`
+                          : `Attached output files (${log.attachments!.length}):`}
                       </span>
                       <div className="space-y-1">
                         {log.attachments!.map((att) => (
@@ -549,21 +597,21 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                               <button
                                 onClick={() => setPreviewAttachment(att)}
                                 className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-indigo-600"
-                                title="Xem nội dung tệp"
+                                title={isVietnamese ? 'Xem nội dung tệp' : 'Preview file'}
                               >
                                 <Eye className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDownloadAttachment(att)}
                                 className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-indigo-600"
-                                title="Tải xuống"
+                                title={isVietnamese ? 'Tải xuống' : 'Download'}
                               >
                                 <Download className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => handleRemoveAttachment(log.id, att.id, att.name)}
                                 className="p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600"
-                                title="Xóa tệp đính kèm này"
+                                title={isVietnamese ? 'Xóa tệp đính kèm này' : 'Delete attachment'}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -578,7 +626,7 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200/80 dark:border-slate-800/80 text-xs">
                     <div className="flex items-center gap-2 text-slate-500">
                       <span className="font-medium text-slate-700 dark:text-slate-300">
-                        {log.wordCount} từ
+                        {log.wordCount} {isVietnamese ? 'từ' : 'words'}
                       </span>
                       <span>•</span>
                       <span>~{log.estimatedTokens} tokens</span>
@@ -592,14 +640,14 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                           className="px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 flex items-center gap-1"
                         >
                           <Plus className="w-3 h-3" />
-                          <span>Dán kết quả AI</span>
+                          <span>{isVietnamese ? 'Dán kết quả AI' : 'Paste AI Result'}</span>
                         </button>
                       )}
 
                       {/* Upload file attachment button */}
                       <label className="cursor-pointer px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center gap-1 transition-colors">
                         <Upload className="w-3 h-3 text-indigo-500" />
-                        <span>Đính kèm tệp</span>
+                        <span>{isVietnamese ? 'Đính kèm tệp' : 'Attach File'}</span>
                         <input
                           type="file"
                           accept=".txt,.md,.json,.csv,.log,.html,.py,.js,.ts"
@@ -618,7 +666,7 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                         ) : (
                           <Copy className="w-3.5 h-3.5 text-indigo-500" />
                         )}
-                        <span>{isCopied ? 'Đã chép' : 'Sao chép'}</span>
+                        <span>{isCopied ? (isVietnamese ? 'Đã chép' : 'Copied') : (isVietnamese ? 'Sao chép' : 'Copy')}</span>
                       </button>
                     </div>
                   </div>
@@ -653,7 +701,7 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
 
               <div className="pt-3 mt-3 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
                 <span className="text-xs text-slate-400">
-                  Dung lượng: {formatFileSize(previewAttachment.size)}
+                  {isVietnamese ? 'Dung lượng:' : 'Size:'} {formatFileSize(previewAttachment.size)}
                 </span>
                 <div className="flex gap-2">
                   <button
@@ -661,13 +709,13 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({ isOpen, onClose, o
                     className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>Tải về</span>
+                    <span>{isVietnamese ? 'Tải về' : 'Download'}</span>
                   </button>
                   <button
                     onClick={() => setPreviewAttachment(null)}
                     className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                   >
-                    Đóng
+                    {isVietnamese ? 'Đóng' : 'Close'}
                   </button>
                 </div>
               </div>

@@ -7,14 +7,19 @@ import {
   X,
   Check,
   ArrowRight,
+  Share2,
+  Download,
 } from 'lucide-react';
 import { usePromptMixer } from '../context/PromptMixerContext';
+import { useLanguage } from '../i18n/LanguageContext';
 import { PromptPreset } from '../types';
 
 interface PresetsModalProps {
   isOpen: boolean;
   onClose: () => void;
   defaultMode?: 'browse' | 'save';
+  onSharePreset?: (preset: PromptPreset) => void;
+  onOpenImport?: () => void;
   onShowToast: (type: 'success' | 'error' | 'info', title: string, message?: string) => void;
 }
 
@@ -22,6 +27,8 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
   isOpen,
   onClose,
   defaultMode = 'browse',
+  onSharePreset,
+  onOpenImport,
   onShowToast,
 }) => {
   const {
@@ -33,6 +40,8 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
     activePresetId,
   } = usePromptMixer();
 
+  const { t, isVietnamese } = useLanguage();
+
   const [mode, setMode] = useState<'browse' | 'save'>(defaultMode);
   const [saveName, setSaveName] = useState('');
   const [saveDesc, setSaveDesc] = useState('');
@@ -43,38 +52,51 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
 
   const handleApply = (preset: PromptPreset) => {
     loadPreset(preset.id);
-    onShowToast('success', 'Đã tải Preset!', `Preset "${preset.name}" đã được nạp vào Mixer.`);
+    onShowToast(
+      'success',
+      isVietnamese ? 'Đã tải Preset!' : 'Preset Loaded!',
+      isVietnamese ? `Preset "${preset.name}" đã được nạp vào Mixer.` : `Preset "${preset.name}" loaded into Mixer.`
+    );
     onClose();
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Bạn có chắc muốn xóa preset "${name}"?`)) {
+    const confirmMsg = isVietnamese ? `Bạn có chắc muốn xóa preset "${name}"?` : `Are you sure you want to delete preset "${name}"?`;
+    if (confirm(confirmMsg)) {
       await deletePreset(id);
-      onShowToast('info', 'Đã xóa preset');
+      onShowToast('info', isVietnamese ? 'Đã xóa preset' : 'Deleted preset');
     }
   };
 
   const handleSaveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!saveName.trim()) {
-      onShowToast('error', 'Chưa nhập tên preset');
+      onShowToast('error', isVietnamese ? 'Chưa nhập tên preset' : 'Preset name required');
       return;
     }
 
     if (canvasItems.length === 0) {
-      onShowToast('error', 'Canvas trống', 'Cần có ít nhất một block để lưu thành preset.');
+      onShowToast(
+        'error',
+        isVietnamese ? 'Canvas trống' : 'Canvas empty',
+        isVietnamese ? 'Cần có ít nhất một block để lưu thành preset.' : 'At least one block is required to save a preset.'
+      );
       return;
     }
 
     setSaving(true);
     try {
       const newPreset = await saveCurrentAsPreset(saveName.trim(), saveDesc.trim(), saveCategory.trim());
-      onShowToast('success', 'Đã lưu Preset mới!', `"${newPreset.name}" đã sẵn sàng tái sử dụng.`);
+      onShowToast(
+        'success',
+        isVietnamese ? 'Đã lưu Preset mới!' : 'Saved New Preset!',
+        isVietnamese ? `"${newPreset.name}" đã sẵn sàng tái sử dụng.` : `"${newPreset.name}" is ready for reuse.`
+      );
       setSaveName('');
       setSaveDesc('');
       setMode('browse');
     } catch {
-      onShowToast('error', 'Lỗi khi lưu preset');
+      onShowToast('error', isVietnamese ? 'Lỗi khi lưu preset' : 'Failed to save preset');
     } finally {
       setSaving(false);
     }
@@ -91,10 +113,10 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                Quản lý Presets (Công thức Prompt)
+                {isVietnamese ? 'Quản lý Presets (Công thức Prompt)' : 'Manage Presets (Prompt Recipes)'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                Lưu và tái sử dụng chuỗi ghép nối prompt blocks thường dùng
+                {isVietnamese ? 'Lưu và tái sử dụng chuỗi ghép nối prompt blocks thường dùng' : 'Save and reuse frequent block combinations'}
               </p>
             </div>
           </div>
@@ -109,7 +131,7 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
               >
-                Danh sách ({presets.length})
+                {isVietnamese ? `Danh sách (${presets.length})` : `Browse (${presets.length})`}
               </button>
               <button
                 onClick={() => setMode('save')}
@@ -120,8 +142,21 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                 }`}
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Lưu Canvas</span>
+                <span>{isVietnamese ? 'Lưu Canvas' : 'Save Canvas'}</span>
               </button>
+              {onOpenImport && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenImport();
+                  }}
+                  className="px-3.5 py-1.5 rounded-lg font-semibold flex items-center gap-1 transition-all text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300"
+                  title={isVietnamese ? 'Nhập Preset từ URL hoặc file' : 'Import Preset from URL or file'}
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>{isVietnamese ? 'Nhập' : 'Import'}</span>
+                </button>
+              )}
             </div>
 
             <button
@@ -141,10 +176,12 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                 <div className="text-center py-12 text-slate-400">
                   <Bookmark className="w-10 h-10 mx-auto mb-2 opacity-40 text-slate-400" />
                   <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    Chưa có preset nào được lưu
+                    {isVietnamese ? 'Chưa có preset nào được lưu' : 'No presets saved yet'}
                   </p>
                   <p className="text-xs mt-1 text-slate-500">
-                    Sắp xếp các block trên Canvas rồi chuyển sang tab "Lưu Canvas" để tạo preset đầu tiên.
+                    {isVietnamese
+                      ? 'Sắp xếp các block trên Canvas rồi chuyển sang tab "Lưu Canvas" để tạo preset đầu tiên.'
+                      : 'Arrange blocks on the Canvas, then switch to "Save Canvas" to create your first preset.'}
                   </p>
                 </div>
               ) : (
@@ -172,7 +209,7 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                             </span>
                             {isActive && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-semibold">
-                                Đang dùng
+                                {isVietnamese ? 'Đang dùng' : 'Active'}
                               </span>
                             )}
                           </div>
@@ -184,17 +221,27 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
+                          {onSharePreset && (
+                            <button
+                              onClick={() => onSharePreset(preset)}
+                              className="px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-1 transition-colors"
+                              title={isVietnamese ? 'Chia sẻ preset này qua URL nén' : 'Share this preset via compressed URL'}
+                            >
+                              <Share2 className="w-3.5 h-3.5 text-indigo-500" />
+                              <span className="hidden sm:inline">{isVietnamese ? 'Chia sẻ' : 'Share'}</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => handleApply(preset)}
                             className="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 transition-colors shadow-xs"
                           >
                             <Play className="w-3.5 h-3.5 fill-white" />
-                            <span>Áp dụng</span>
+                            <span>{isVietnamese ? 'Áp dụng' : 'Apply'}</span>
                           </button>
                           <button
                             onClick={() => handleDelete(preset.id, preset.name)}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                            title="Xóa preset này"
+                            title={isVietnamese ? 'Xóa preset này' : 'Delete this preset'}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -203,7 +250,9 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
 
                       {/* Sequence of chained blocks */}
                       <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-1.5 text-xs">
-                        <span className="text-slate-400 font-medium mr-1">Chuỗi block:</span>
+                        <span className="text-slate-400 font-medium mr-1">
+                          {isVietnamese ? 'Chuỗi block:' : 'Block chain:'}
+                        </span>
                         {blockNames.map((name, i) => (
                           <React.Fragment key={i}>
                             <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 font-mono text-slate-700 dark:text-slate-300">
@@ -218,8 +267,10 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
 
                       {/* Variables summary if available */}
                       {preset.variableValues && Object.keys(preset.variableValues).length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-dashed border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-1.5 text-xs">
-                          <span className="text-slate-400 font-medium mr-1">Giá trị mẫu:</span>
+                        <div className="mt-2 pt-2 border-dashed border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-1.5 text-xs">
+                          <span className="text-slate-400 font-medium mr-1">
+                            {isVietnamese ? 'Giá trị mẫu:' : 'Sample values:'}
+                          </span>
                           {Object.entries(preset.variableValues).map(([k, v]) => (
                             <span
                               key={k}
@@ -240,7 +291,11 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
             /* Save Current Canvas Form */
             <form onSubmit={handleSaveSubmit} className="space-y-4">
               <div className="p-4 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-xs sm:text-sm text-indigo-900 dark:text-indigo-200">
-                <span className="font-bold">Đang lưu {canvasItems.length} blocks từ Workspace hiện tại:</span>
+                <span className="font-bold">
+                  {isVietnamese
+                    ? `Đang lưu ${canvasItems.length} blocks từ Workspace hiện tại:`
+                    : `Saving ${canvasItems.length} blocks from current Workspace:`}
+                </span>
                 <ul className="mt-2 space-y-1 list-disc list-inside text-xs opacity-90">
                   {canvasItems.map((ci, idx) => (
                     <li key={ci.instanceId}>
@@ -252,45 +307,45 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
 
               <div>
                 <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 block mb-1.5">
-                  Tên Preset:
+                  {isVietnamese ? 'Tên Preset:' : 'Preset Name:'}
                 </label>
                 <input
                   type="text"
                   required
                   value={saveName}
                   onChange={(e) => setSaveName(e.target.value)}
-                  placeholder="Ví dụ: Tối ưu SEO & Hook viral"
+                  placeholder={isVietnamese ? 'Ví dụ: Tối ưu SEO & Hook viral' : 'E.g., Senior SaaS Launch & Positioning'}
                   className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
                 />
               </div>
 
               <div>
                 <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 block mb-1.5">
-                  Danh mục:
+                  {isVietnamese ? 'Danh mục:' : 'Category:'}
                 </label>
                 <select
                   value={saveCategory}
                   onChange={(e) => setSaveCategory(e.target.value)}
                   className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
                 >
-                  <option value="Marketing">Marketing & Copywriting</option>
-                  <option value="Engineering">Kỹ thuật & Lập trình</option>
-                  <option value="Data & AI">Dữ liệu & Trí tuệ nhân tạo</option>
-                  <option value="Business">Chiến lược & Kinh doanh</option>
-                  <option value="Education">Giáo dục & Nghiên cứu</option>
-                  <option value="Custom">Khác / Tùy chỉnh</option>
+                  <option value="Marketing">{isVietnamese ? 'Marketing & Copywriting' : 'Marketing & Copywriting'}</option>
+                  <option value="Engineering">{isVietnamese ? 'Kỹ thuật & Lập trình' : 'Engineering & Programming'}</option>
+                  <option value="Data & AI">{isVietnamese ? 'Dữ liệu & Trí tuệ nhân tạo' : 'Data & Artificial Intelligence'}</option>
+                  <option value="Business">{isVietnamese ? 'Chiến lược & Kinh doanh' : 'Business & Strategy'}</option>
+                  <option value="Education">{isVietnamese ? 'Giáo dục & Nghiên cứu' : 'Education & Research'}</option>
+                  <option value="Custom">{isVietnamese ? 'Khác / Tùy chỉnh' : 'Other / Custom'}</option>
                 </select>
               </div>
 
               <div>
                 <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 block mb-1.5">
-                  Mô tả mục đích sử dụng:
+                  {isVietnamese ? 'Mô tả mục đích sử dụng:' : 'Usage Description:'}
                 </label>
                 <textarea
                   rows={2}
                   value={saveDesc}
                   onChange={(e) => setSaveDesc(e.target.value)}
-                  placeholder="Mô tả ngắn gọn khi nào nên dùng preset này..."
+                  placeholder={isVietnamese ? 'Mô tả ngắn gọn khi nào nên dùng preset này...' : 'Briefly describe when to use this preset...'}
                   className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
                 />
               </div>
@@ -301,7 +356,7 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                   onClick={() => setMode('browse')}
                   className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 hover:underline"
                 >
-                  Quay lại
+                  {isVietnamese ? 'Quay lại' : 'Back'}
                 </button>
                 <button
                   type="submit"
@@ -309,7 +364,7 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                   className="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 disabled:opacity-50 transition-colors shadow-md shadow-indigo-500/20"
                 >
                   <Check className="w-4 h-4" />
-                  <span>{saving ? 'Đang lưu...' : 'Lưu thành Preset'}</span>
+                  <span>{saving ? t('common.saving') : (isVietnamese ? 'Lưu thành Preset' : 'Save as Preset')}</span>
                 </button>
               </div>
             </form>
